@@ -1,0 +1,6 @@
+DOMAIN = "delayed_action"
+ATTR_ENTITY_ID = "entity_id"
+ATTR_DELAY = "delay"
+ATTR_ACTION = "action"
+ATTR_DATETIME = "datetime"
+ATTR_ADDITIONAL_DATA = "additional_data"

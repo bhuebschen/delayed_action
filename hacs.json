@@ -1,0 +1,11 @@
+{
+    "name": "Delayed Action",
+    "description": "A Home Assistant integration to schedule actions with a delay or at a specific time.",
+    "domain": "delayed_action",
+    "codeowners": ["@bhuebschen"],
+    "requirements": [],
+    "documentation": "https://example.com",
+    "issue_tracker": "https://github.com/bhuebschen/delayed_action/issues",
+    "version": "0.1.0",
+    "config_flow": true
+  }

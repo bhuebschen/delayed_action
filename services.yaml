@@ -1,0 +1,18 @@
+execute:
+  description: "Schedule an action with a delay or at a specific time"
+  fields:
+    entity_id:
+      description: "The entity ID of the device to control"
+      example: "switch.any_switch"
+    action:
+      description: "The action to perform (e.g., turn_on, turn_off, set_brightness, set_temperature)"
+      example: "turn_on"
+    delay:
+      description: "The delay in seconds before performing the action"
+      example: 10
+    datetime:
+      description: "The specific date and time to perform the action (ISO 8601 format)"
+      example: "2024-06-23T18:00:00"
+    additional_data:
+      description: "Any additional data to be passed to the service call (optional)"
+      example: {"attribute": "value"}

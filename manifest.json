@@ -1,0 +1,10 @@
+{
+    "domain": "delayed_action",
+    "name": "Delayed Action",
+    "documentation": "https://github.com/bhuebschen/delayed_action",
+    "requirements": [],
+    "dependencies": [],
+    "codeowners": ["@bhuebschen"],
+    "config_flow": true,
+    "version": "0.1.0"
+}

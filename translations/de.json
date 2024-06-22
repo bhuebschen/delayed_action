@@ -1,0 +1,22 @@
+{
+    "title": "Delayed Action",
+    "config": {
+        "step": {
+            "user": {
+                "title": "Delayed Action konfigurieren",
+                "description": "Eine neue Delayed Action Integration hinzufügen",
+                "data": {
+                    "name": "Name"
+                }
+            }
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Delayed Action konfigurieren",
+                "description": "Konfiguriert die Delayed Action Integration"
+            }
+        }
+    }
+}
