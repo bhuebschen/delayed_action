@@ -23,7 +23,7 @@ The `delayed_action` integration allows you to schedule actions for Home Assista
 1. Restart Home Assistant
 1. Add delayed_action to your page
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=bhuebschen&repository=delayed_action&category=plugin)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=bhuebschen&repository=delayed_action&category=integration)
 
 ### Manual
 
