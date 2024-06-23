@@ -4,8 +4,8 @@
     "domain": "delayed_action",
     "codeowners": ["@bhuebschen"],
     "requirements": [],
-    "documentation": "https://example.com",
+    "documentation": "https://github.com/bhuebschen/delayed_action",
     "issue_tracker": "https://github.com/bhuebschen/delayed_action/issues",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "config_flow": true
   }
