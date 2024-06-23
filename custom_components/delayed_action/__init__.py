@@ -24,13 +24,13 @@ SERVICE_DELAY_SCHEMA = vol.Schema(
 )
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Set up the Delayed Switch component."""
-    _LOGGER.info("Setting up Delayed Switch component")
+    """Set up the Delayed Action component."""
+    _LOGGER.info("Setting up Delayed Action component")
     return True
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up Delayed Switch from a config entry."""
-    _LOGGER.info("Setting up Delayed Switch from config entry")
+    """Set up Delayed Action from a config entry."""
+    _LOGGER.info("Setting up Delayed Action from config entry")
 
     async def handle_delayed_action(call):
         entity_id = call.data[ATTR_ENTITY_ID]
@@ -88,5 +88,5 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.services.async_register(DOMAIN, SERVICE_DELAYED_ACTION, handle_delayed_action, schema=SERVICE_DELAY_SCHEMA)
     _LOGGER.info(f"Registered service {SERVICE_DELAYED_ACTION}")
 
-    _LOGGER.info("Delayed Switch component setup complete")
+    _LOGGER.info("Delayed Action component setup complete")
     return True

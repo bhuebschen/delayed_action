@@ -36,7 +36,8 @@ The `delayed_action` integration allows you to schedule actions for Home Assista
 ├── config_flow.py
 ├── const.py
 └── services.yaml
-└── translations/en.json
+    ├── translations/de.json
+    └── translations/en.json
 ```
 
 2. Copy the provided files into the `custom_components/delayed_action/` directory.
