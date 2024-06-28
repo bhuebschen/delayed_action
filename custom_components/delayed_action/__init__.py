@@ -1,6 +1,6 @@
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 import voluptuous as vol
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
@@ -30,7 +30,7 @@ SERVICE_DELAY_SCHEMA = vol.Schema(
 SERVICE_CANCEL_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_ENTITY_ID): cv.entity_id,
-        vol.Optional(ATTR_ACTION): cv.string,
+        vol.Optional(ATTR_TASK_ID): cv.string,
     }
 )
 
@@ -63,7 +63,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             }
             _LOGGER.info(f"Scheduling {action} for {entity_id} in {delay_seconds} seconds with task ID {task_id}")
             task = async_call_later(hass, delay_seconds, lambda _: hass.loop.call_soon_threadsafe(_handle_action, hass, action_data))
-            _store_task(hass, entity_id, action, task_id, task)
+            _store_task(hass, entity_id, action, task_id, task, datetime.now() + timedelta(seconds=delay_seconds))
         elif scheduled_time:
             now = datetime.now()
             delay_seconds = (scheduled_time - now).total_seconds()
@@ -79,7 +79,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             }
             _LOGGER.info(f"Scheduling {action} for {entity_id} at {scheduled_time} with task ID {task_id}")
             task = async_track_point_in_time(hass, lambda _: hass.loop.call_soon_threadsafe(_handle_action, hass, action_data), scheduled_time)
-            _store_task(hass, entity_id, action, task_id, task)
+            _store_task(hass, entity_id, action, task_id, task, scheduled_time)
         else:
             _LOGGER.error("Either delay or datetime must be provided.")
 
@@ -116,16 +116,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def handle_list_actions(call):
         entity_id = call.data.get(ATTR_ENTITY_ID)
         actions = _list_tasks(hass, entity_id)
-        _LOGGER.info(f"Scheduled actions: {actions}")
-        hass.bus.fire(f"{DOMAIN}_list_actions_response", {"actions": actions})
+        serialized_actions = _serialize_actions(actions)
+        _LOGGER.info(f"Scheduled actions: {serialized_actions}")
+        hass.bus.fire(f"{DOMAIN}_list_actions_response", {"actions": serialized_actions})
 
-    def _store_task(hass, entity_id, action, task_id, task):
+    def _store_task(hass, entity_id, action, task_id, task, due):
         if entity_id not in hass.data[DOMAIN]["tasks"]:
             hass.data[DOMAIN]["tasks"][entity_id] = {}
         hass.data[DOMAIN]["tasks"][entity_id][task_id] = {
             "action": action,
             "task": task,
             "task_id": task_id,
+            "due": due,
         }
 
     def _remove_task(hass, entity_id, task_id):
@@ -140,18 +142,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             if entity_id in hass.data[DOMAIN]["tasks"]:
                 if task_id:
                     if task_id in hass.data[DOMAIN]["tasks"][entity_id]:
-                        hass.data[DOMAIN]["tasks"][entity_id][task_id]["task"].cancel()
+                        task = hass.data[DOMAIN]["tasks"][entity_id][task_id]["task"]
+                        hass.loop.call_soon_threadsafe(task)
                         _remove_task(hass, entity_id, task_id)
                         return True
                 else:
                     for task_id, task_data in list(hass.data[DOMAIN]["tasks"][entity_id].items()):
-                        task_data["task"].cancel()
+                        task = task_data["task"]
+                        hass.loop.call_soon_threadsafe(task)
                         _remove_task(hass, entity_id, task_id)
                     return True
         else:
             for entity_id in list(hass.data[DOMAIN]["tasks"].keys()):
                 for task_id, task_data in list(hass.data[DOMAIN]["tasks"][entity_id].items()):
-                    task_data["task"].cancel()
+                    task = task_data["task"]
+                    hass.loop.call_soon_threadsafe(task)
                     _remove_task(hass, entity_id, task_id)
             return True
         return False
@@ -160,6 +165,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if entity_id:
             return hass.data[DOMAIN]["tasks"].get(entity_id, {})
         return hass.data[DOMAIN]["tasks"]
+
+    def _serialize_actions(actions):
+        serialized = {}
+        for entity_id, tasks in actions.items():
+            serialized[entity_id] = {}
+            for task_id, task_data in tasks.items():
+                serialized[entity_id][task_id] = {
+                    "action": task_data["action"],
+                    "task_id": task_id,
+                    "due": task_data["due"].isoformat(),
+                }
+        return serialized
 
     hass.services.async_register(DOMAIN, SERVICE_DELAYED_ACTION, handle_delayed_action, schema=SERVICE_DELAY_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_CANCEL_ACTION, handle_cancel_action, schema=SERVICE_CANCEL_SCHEMA)

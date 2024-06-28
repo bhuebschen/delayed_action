@@ -19,7 +19,7 @@ The `delayed_action` integration allows you to schedule actions for Home Assista
 1. Add this repository (https://github.com/bhuebschen/delayed_action) via HACS Custom repositories [How to add Custom Repositories](https://hacs.xyz/docs/faq/custom_repositories/)
 1. Select `Integration`
 1. Press add icon and search for `Delayed Action`
-1. Select Delayed Action repo and install
+1. Select Delayed Action repo and install,
 1. Restart Home Assistant
 1. Add delayed_action to your page
 
