@@ -9,13 +9,14 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.event import async_call_later, async_track_point_in_time
 from homeassistant.helpers.entity_registry import async_get as async_get_entity_registry
 from homeassistant.helpers.service import async_register_admin_service
-from .const import DOMAIN, ATTR_ENTITY_ID, ATTR_DELAY, ATTR_ACTION, ATTR_DATETIME, ATTR_ADDITIONAL_DATA, ATTR_TASK_ID
+from .const import DOMAIN, ATTR_ENTITY_ID, ATTR_DELAY, ATTR_ACTION, ATTR_DATETIME, ATTR_ADDITIONAL_DATA, ATTR_TASK_ID, CONF_DOMAINS
 
 _LOGGER = logging.getLogger(__name__)
 
 SERVICE_DELAYED_ACTION = "execute"
 SERVICE_CANCEL_ACTION = "cancel"
 SERVICE_LIST_ACTIONS = "list"
+SERVICE_GET_DOMAIN = "get_config"
 
 SERVICE_DELAY_SCHEMA = vol.Schema(
     {
@@ -34,15 +35,36 @@ SERVICE_CANCEL_SCHEMA = vol.Schema(
     }
 )
 
+CONFIG_SCHEMA = vol.Schema(
+    {
+        DOMAIN: vol.Schema(
+            {
+                vol.Optional(CONF_DOMAINS, default=[]): vol.All(cv.ensure_list, [cv.string]),
+            }
+        )
+    },
+    extra=vol.ALLOW_EXTRA,
+)
+
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Delayed Action component."""
     _LOGGER.info("Setting up Delayed Action component")
-    hass.data[DOMAIN] = {"tasks": {}}
+    hass.data[DOMAIN] = {"tasks": {}, "domains": config.get(DOMAIN, {}).get(CONF_DOMAINS, [])}
+
+    async def handle_event(event):
+        hass.bus.fire(f"{DOMAIN}_get_config_response", event.data)
+
+    hass.bus.async_listen('internal_get_config_response', handle_event)
     return True
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Delayed Action from a config entry."""
     _LOGGER.info("Setting up Delayed Action from config entry")
+
+    config = entry.options
+    hass.data[DOMAIN]["domains"] = config.get(CONF_DOMAINS, [])
+
+    _LOGGER.info("Delayed Action component setup complete")
 
     async def handle_delayed_action(call):
         entity_id = call.data[ATTR_ENTITY_ID]
@@ -120,6 +142,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _LOGGER.info(f"Scheduled actions: {serialized_actions}")
         hass.bus.fire(f"{DOMAIN}_list_actions_response", {"actions": serialized_actions})
 
+    async def get_config_service(call):
+        """Handle the service call to get config."""
+        hass.bus.fire(f"{DOMAIN}_get_config_response", serialize_config(config))
+
     def _store_task(hass, entity_id, action, task_id, task, due):
         if entity_id not in hass.data[DOMAIN]["tasks"]:
             hass.data[DOMAIN]["tasks"][entity_id] = {}
@@ -143,20 +169,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 if task_id:
                     if task_id in hass.data[DOMAIN]["tasks"][entity_id]:
                         task = hass.data[DOMAIN]["tasks"][entity_id][task_id]["task"]
-                        hass.loop.call_soon_threadsafe(task)
+                        task()
                         _remove_task(hass, entity_id, task_id)
                         return True
                 else:
                     for task_id, task_data in list(hass.data[DOMAIN]["tasks"][entity_id].items()):
                         task = task_data["task"]
-                        hass.loop.call_soon_threadsafe(task)
+                        task()
                         _remove_task(hass, entity_id, task_id)
                     return True
         else:
             for entity_id in list(hass.data[DOMAIN]["tasks"].keys()):
                 for task_id, task_data in list(hass.data[DOMAIN]["tasks"][entity_id].items()):
                     task = task_data["task"]
-                    hass.loop.call_soon_threadsafe(task)
+                    task()
                     _remove_task(hass, entity_id, task_id)
             return True
         return False
@@ -178,10 +204,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 }
         return serialized
 
+    def serialize_config(config):
+        """Serialize the domains."""
+        serialized = {}
+        serialized[CONF_DOMAINS] = config.get(CONF_DOMAINS, [])
+        return serialized
+
     hass.services.async_register(DOMAIN, SERVICE_DELAYED_ACTION, handle_delayed_action, schema=SERVICE_DELAY_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_CANCEL_ACTION, handle_cancel_action, schema=SERVICE_CANCEL_SCHEMA)
+    async_register_admin_service(hass, DOMAIN, SERVICE_GET_DOMAIN, get_config_service, schema=vol.Schema({}))
     async_register_admin_service(hass, DOMAIN, SERVICE_LIST_ACTIONS, handle_list_actions, schema=vol.Schema({vol.Optional(ATTR_ENTITY_ID): cv.entity_id}))
     _LOGGER.info(f"Registered services {SERVICE_DELAYED_ACTION}, {SERVICE_CANCEL_ACTION}, and {SERVICE_LIST_ACTIONS}")
 
     _LOGGER.info("Delayed Action component setup complete")
+    return True
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
+    _LOGGER.info("Unloading Delayed Action config entry")
     return True

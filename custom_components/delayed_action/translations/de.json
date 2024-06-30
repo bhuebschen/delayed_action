@@ -15,7 +15,7 @@
         "step": {
             "init": {
                 "title": "Delayed Action konfigurieren",
-                "description": "Konfiguriert die Delayed Action Integration"
+                "description": "Geben Sie die Entitätstypen an, die Sie mit Delayed Action verwenden möchten"
             }
         }
     }
