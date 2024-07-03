@@ -1,6 +1,6 @@
 ![delayed_action](https://github.com/bhuebschen/delayed_action/assets/1864448/fe84a672-b572-46ca-bb7e-73f236ab4306)
 
-#Delayed Action Home Assistant Integration
+# Delayed Action Home Assistant Integration
 
 [![hacs][hacs-image]][hacs-url]
 [![GitHub Sponsors][gh-sponsors-image]][gh-sponsors-url]
