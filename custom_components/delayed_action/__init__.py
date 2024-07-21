@@ -39,7 +39,7 @@ CONFIG_SCHEMA = vol.Schema(
     {
         DOMAIN: vol.Schema(
             {
-                vol.Optional(CONF_DOMAINS, default=["automation", "climate", "cover", "fan", "humidifier", "light", "lock", "media_player", "script", "switch", "vacuum", "water_heater"]): vol.All(cv.ensure_list, [cv.string]),
+                vol.Optional(CONF_DOMAINS, default=["automation", "climate", "cover", "fan", "humidifier", "light", "lock", "media_player", "script", "switch", "vacuum", "water_heater", "select"]): vol.All(cv.ensure_list, [cv.string]),
             }
         )
     },
@@ -49,7 +49,7 @@ CONFIG_SCHEMA = vol.Schema(
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Delayed Action component."""
     _LOGGER.info("Setting up Delayed Action component")
-    hass.data[DOMAIN] = {"tasks": {}, "domains": config.get(DOMAIN, {}).get(CONF_DOMAINS, ["automation", "climate", "cover", "fan", "humidifier", "light", "lock", "media_player", "script", "switch", "vacuum", "water_heater"])}
+    hass.data[DOMAIN] = {"tasks": {}, "domains": config.get(DOMAIN, {}).get(CONF_DOMAINS, ["automation", "climate", "cover", "fan", "humidifier", "light", "lock", "media_player", "script", "switch", "vacuum", "water_heater", "select"])}
 
     async def handle_event(event):
         hass.bus.fire(f"{DOMAIN}_get_config_response", event.data)
@@ -62,7 +62,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _LOGGER.info("Setting up Delayed Action from config entry")
 
     config = entry.options
-    hass.data[DOMAIN]["domains"] = config.get(CONF_DOMAINS, ["automation", "climate", "cover", "fan", "humidifier", "light", "lock", "media_player", "script", "switch", "vacuum", "water_heater"])
+    hass.data[DOMAIN]["domains"] = config.get(CONF_DOMAINS, ["automation", "climate", "cover", "fan", "humidifier", "light", "lock", "media_player", "script", "switch", "vacuum", "water_heater", "select"])
 
     _LOGGER.info("Delayed Action component setup complete")
 
@@ -207,7 +207,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     def serialize_config(config):
         """Serialize the domains."""
         serialized = {}
-        serialized[CONF_DOMAINS] = config.get(CONF_DOMAINS, ["automation", "climate", "cover", "fan", "humidifier", "light", "lock", "media_player", "script", "switch", "vacuum", "water_heater"])
+        serialized[CONF_DOMAINS] = config.get(CONF_DOMAINS, ["automation", "climate", "cover", "fan", "humidifier", "light", "lock", "media_player", "script", "switch", "vacuum", "water_heater", "select"])
         return serialized
 
     hass.services.async_register(DOMAIN, SERVICE_DELAYED_ACTION, handle_delayed_action, schema=SERVICE_DELAY_SCHEMA)
