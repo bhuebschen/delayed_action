@@ -9,7 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.event import async_call_later, async_track_point_in_time
 from homeassistant.helpers.entity_registry import async_get as async_get_entity_registry
 from homeassistant.helpers.service import async_register_admin_service
-from .const import DOMAIN, ATTR_ENTITY_ID, ATTR_DELAY, ATTR_ACTION, ATTR_DATETIME, ATTR_ADDITIONAL_DATA, ATTR_TASK_ID, CONF_DOMAINS
+from .const import DOMAIN, ATTR_ENTITY_ID, ATTR_DELAY, ATTR_ACTION, ATTR_DATETIME, ATTR_ADDITIONAL_DATA, ATTR_TASK_ID, CONF_DOMAINS, ATTR_DOMAINS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ CONFIG_SCHEMA = vol.Schema(
     {
         DOMAIN: vol.Schema(
             {
-                vol.Optional(CONF_DOMAINS, default=["automation", "climate", "cover", "fan", "humidifier", "light", "lock", "media_player", "script", "switch", "vacuum", "water_heater", "select"]): vol.All(cv.ensure_list, [cv.string]),
+                vol.Optional(CONF_DOMAINS, default=ATTR_DOMAINS): vol.All(cv.ensure_list, [cv.string]),
             }
         )
     },
@@ -49,7 +49,7 @@ CONFIG_SCHEMA = vol.Schema(
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Delayed Action component."""
     _LOGGER.info("Setting up Delayed Action component")
-    hass.data[DOMAIN] = {"tasks": {}, "domains": config.get(DOMAIN, {}).get(CONF_DOMAINS, ["automation", "climate", "cover", "fan", "humidifier", "light", "lock", "media_player", "script", "switch", "vacuum", "water_heater", "select"])}
+    hass.data[DOMAIN] = {"tasks": {}, "domains": config.get(DOMAIN, {}).get(CONF_DOMAINS, ATTR_DOMAINS)}
 
     async def handle_event(event):
         hass.bus.fire(f"{DOMAIN}_get_config_response", event.data)
@@ -62,7 +62,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _LOGGER.info("Setting up Delayed Action from config entry")
 
     config = entry.options
-    hass.data[DOMAIN]["domains"] = config.get(CONF_DOMAINS, ["automation", "climate", "cover", "fan", "humidifier", "light", "lock", "media_player", "script", "switch", "vacuum", "water_heater", "select"])
+    hass.data[DOMAIN]["domains"] = config.get(CONF_DOMAINS, ATTR_DOMAINS)
 
     _LOGGER.info("Delayed Action component setup complete")
 
@@ -80,9 +80,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 ATTR_ENTITY_ID: entity_id,
                 ATTR_ACTION: action,
                 ATTR_DELAY: delay_seconds,
-                ATTR_ADDITIONAL_DATA: additional_data,
                 ATTR_TASK_ID: task_id,
             }
+
+            if additional_data is not None:
+                action_data[ATTR_ADDITIONAL_DATA] = additional_data
+
             _LOGGER.info(f"Scheduling {action} for {entity_id} in {delay_seconds} seconds with task ID {task_id}")
             task = async_call_later(hass, delay_seconds, lambda _: hass.loop.call_soon_threadsafe(_handle_action, hass, action_data))
             _store_task(hass, entity_id, action, task_id, task, datetime.now() + timedelta(seconds=delay_seconds))
@@ -95,10 +98,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             action_data = {
                 ATTR_ENTITY_ID: entity_id,
                 ATTR_ACTION: action,
-                ATTR_DATETIME: scheduled_time.isoformat(),
-                ATTR_ADDITIONAL_DATA: additional_data,
+                ATTR_DELAY: delay_seconds,
                 ATTR_TASK_ID: task_id,
             }
+
+            # Include ATTR_ADDITIONAL_DATA only if additional_data is set
+            if additional_data is not None:
+                action_data[ATTR_ADDITIONAL_DATA] = additional_data
             _LOGGER.info(f"Scheduling {action} for {entity_id} at {scheduled_time} with task ID {task_id}")
             task = async_track_point_in_time(hass, lambda _: hass.loop.call_soon_threadsafe(_handle_action, hass, action_data), scheduled_time)
             _store_task(hass, entity_id, action, task_id, task, scheduled_time)
@@ -120,8 +126,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         domain = entity.domain
         service_data = {"entity_id": entity_id}
+        if additional_data is not None:
         service_data.update(additional_data)
-
+            _LOGGER.info(f"additional_data {additional_data}")
         hass.loop.call_soon_threadsafe(hass.async_create_task, hass.services.async_call(domain, action, service_data))
         _LOGGER.info(f"Executed {action} for {entity_id}")
         _remove_task(hass, entity_id, task_id)
@@ -207,7 +214,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     def serialize_config(config):
         """Serialize the domains."""
         serialized = {}
-        serialized[CONF_DOMAINS] = config.get(CONF_DOMAINS, ["automation", "climate", "cover", "fan", "humidifier", "light", "lock", "media_player", "script", "switch", "vacuum", "water_heater", "select"])
+        serialized[CONF_DOMAINS] = config.get(CONF_DOMAINS, ATTR_DOMAINS)
         return serialized
 
     hass.services.async_register(DOMAIN, SERVICE_DELAYED_ACTION, handle_delayed_action, schema=SERVICE_DELAY_SCHEMA)

@@ -3,7 +3,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
-from .const import DOMAIN, CONF_DOMAINS
+from .const import DOMAIN, CONF_DOMAINS, ATTR_DOMAINS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ class DelayedActionOptionsFlowHandler(config_entries.OptionsFlow):
             return self.async_create_entry(title="", data=user_input)
 
         options = self.config_entry.options
-        domains = options.get(CONF_DOMAINS, ["automation", "climate", "cover", "fan", "humidifier", "light", "lock", "media_player", "script", "switch", "vacuum", "water_heater"])
+        domains = options.get(CONF_DOMAINS, ATTR_DOMAINS)
 
         return self.async_show_form(
             step_id="init",
@@ -29,10 +29,15 @@ class DelayedActionOptionsFlowHandler(config_entries.OptionsFlow):
                     "cover": "Cover",
                     "fan": "Fan",
                     "humidifier": "Humidifier",
+                    "input_boolean": "Input Boolean",
+                    "input_select": "Input Select",
+                    "lawn_mower": "Lawn Mower",
                     "light": "Light",
                     "lock": "Lock",
                     "media_player": "Media Player",
+                    "scene": "Scene",
                     "script": "Script",
+                    "select": "Select",
                     "switch": "Switch",
                     "vacuum": "Vacuum",
                     "water_heater": "Water Heater",

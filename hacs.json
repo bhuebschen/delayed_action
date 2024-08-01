@@ -6,6 +6,6 @@
     "requirements": [],
     "documentation": "https://github.com/bhuebschen/delayed_action",
     "issue_tracker": "https://github.com/bhuebschen/delayed_action/issues",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "config_flow": true
   }

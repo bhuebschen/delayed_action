@@ -3,7 +3,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
-from .const import DOMAIN, CONF_DOMAINS
+from .const import DOMAIN, CONF_DOMAINS, ATTR_DOMAINS
 from .options_flow import DelayedActionOptionsFlowHandler
 
 _LOGGER = logging.getLogger(__name__)
@@ -26,23 +26,24 @@ class DelayedActionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_create_entry(title="Delayed Action", data=user_input)
 
         data_schema = vol.Schema({
-            vol.Optional(CONF_DOMAINS, default=["automation", "climate", "cover", "fan", "humidifier", "light", "lock", "media_player", "script", "switch", "vacuum", "water_heater", "select"]): cv.multi_select({
+            vol.Optional(CONF_DOMAINS, default=ATTR_DOMAINS): cv.multi_select({
                 "automation": "Automation",
                 "climate": "Climate",
                 "cover": "Cover",
                 "fan": "Fan",
                 "humidifier": "Humidifier",
                 "input_boolean": "Input Boolean",
+                "input_select": "Input Select",
                 "lawn_mower": "Lawn Mower",
                 "light": "Light",
                 "lock": "Lock",
                 "media_player": "Media Player",
                 "scene": "Scene",
                 "script": "Script",
+                "select": "Select",
                 "switch": "Switch",
                 "vacuum": "Vacuum",
                 "water_heater": "Water Heater",
-                "select": "Select",
             }),
         })
         return self.async_show_form(step_id="user", data_schema=data_schema)
