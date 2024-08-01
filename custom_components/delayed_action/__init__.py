@@ -127,8 +127,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         domain = entity.domain
         service_data = {"entity_id": entity_id}
         if additional_data is not None:
-        service_data.update(additional_data)
-            _LOGGER.info(f"additional_data {additional_data}")
+            service_data.update(additional_data)
+
         hass.loop.call_soon_threadsafe(hass.async_create_task, hass.services.async_call(domain, action, service_data))
         _LOGGER.info(f"Executed {action} for {entity_id}")
         _remove_task(hass, entity_id, task_id)
