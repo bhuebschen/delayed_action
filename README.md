@@ -7,6 +7,8 @@
 
 The `delayed_action` integration allows you to schedule actions for Home Assistant entities with a delay or at a specific time. This integration supports various entities and actions, providing flexibility in controlling your devices.
 
+*** WORKS IN BEST COMBINATION WITH [DELAYED-ACTION-CARD](https://github.com/bhuebschen/delayed-action-card) ***
+
 ## Features
 
 - Schedule actions with a delay (in seconds).
