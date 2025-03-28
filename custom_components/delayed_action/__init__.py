@@ -2,7 +2,7 @@ import logging
 import uuid
 from datetime import datetime, timedelta
 import voluptuous as vol
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant, callback, Context
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.config_entries import ConfigEntry
@@ -87,7 +87,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 action_data[ATTR_ADDITIONAL_DATA] = additional_data
 
             _LOGGER.info(f"Scheduling {action} for {entity_id} in {delay_seconds} seconds with task ID {task_id}")
-            task = async_call_later(hass, delay_seconds, lambda _: hass.loop.call_soon_threadsafe(_handle_action, hass, action_data))
+            task = async_call_later(hass, delay_seconds, lambda _: hass.loop.call_soon_threadsafe(_handle_action, hass, action_data, call))
             _store_task(hass, entity_id, action, task_id, task, datetime.now() + timedelta(seconds=delay_seconds))
         elif scheduled_time:
             now = datetime.now()
@@ -106,13 +106,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             if additional_data is not None:
                 action_data[ATTR_ADDITIONAL_DATA] = additional_data
             _LOGGER.info(f"Scheduling {action} for {entity_id} at {scheduled_time} with task ID {task_id}")
-            task = async_track_point_in_time(hass, lambda _: hass.loop.call_soon_threadsafe(_handle_action, hass, action_data), scheduled_time)
+            task = async_track_point_in_time(hass, lambda _: hass.loop.call_soon_threadsafe(_handle_action, hass, action_data, call), scheduled_time)
             _store_task(hass, entity_id, action, task_id, task, scheduled_time)
         else:
             _LOGGER.error("Either delay or datetime must be provided.")
 
     @callback
-    def _handle_action(hass, action_data):
+    def _handle_action(hass, action_data, call):
         entity_id = action_data[ATTR_ENTITY_ID]
         action = action_data[ATTR_ACTION]
         task_id = action_data[ATTR_TASK_ID]
@@ -129,8 +129,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if additional_data is not None:
             service_data.update(additional_data)
 
-        hass.loop.call_soon_threadsafe(hass.async_create_task, hass.services.async_call(domain, action, service_data))
-        _LOGGER.info(f"Executed {action} for {entity_id}")
+        context = Context(parent_id=call.context.id, user_id=call.context.user_id)
+
+        hass.loop.call_soon_threadsafe(
+            hass.async_create_task,
+            hass.services.async_call(domain, action, service_data, context=context)
+        )
+        _LOGGER.info(f"Executed {action} for {entity_id} with context {context}")
         _remove_task(hass, entity_id, task_id)
 
     async def handle_cancel_action(call):
